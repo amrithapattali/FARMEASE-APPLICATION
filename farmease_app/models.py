@@ -46,15 +46,23 @@ class SchemeAdd(models.Model):
     def contains_age(self, age_to_check):
         return self.start_age <= age_to_check <= self.end_age
     
+
+    
 class News(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     date_posted = models.DateTimeField(auto_now_add=True)
     
+    def __str__(self):
+        return self.title
+    
 class AgriculturalTechnique(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     image = models.ImageField(upload_to='technique_images/', null=True, blank=True)
+    
+    def __str__(self):
+        return self.title
     
 class Crop(models.Model):
     techniques = models.ManyToManyField(AgriculturalTechnique, default=None)
@@ -74,13 +82,16 @@ class Solution(models.Model):
     description = models.TextField()
 
     def __str__(self):
-        return f"{self.disease} - {self.crop.name}"
+        return f"{self.symptoms} - {self.crop.name}"
     
 class Feedback(models.Model):
     solution = models.ForeignKey('Solution', on_delete=models.CASCADE)
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
     content = models.TextField()
     date_posted = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.user.username
     
     
 class FarmerProduct(models.Model):
@@ -92,10 +103,47 @@ class FarmerProduct(models.Model):
         ("Grains", "Grains"),
     ]
     crop_type = models.CharField(max_length=200, choices=CROP_CHOICES, default="Vegetables")
-    
     crop_name = models.CharField(max_length=500,blank=True, null=True)
     image = models.ImageField(upload_to='product_images/',blank=True, null=True)  # Assuming you want to store product images
     price = models.FloatField(null=True, blank=True)
     quantity = models.IntegerField(null=True, blank=True)  # Assuming quantity is in grams
     description = models.TextField(null=True, blank=True)
-    is_available = models.BooleanField(default=True,null=True, blank=True)
+    is_out_of_stock = models.BooleanField(default=False)
+    
+    def save(self, *args, **kwargs):
+        if self.quantity == 0:
+            self.is_out_of_stock = True
+        elif self.quantity > 0:
+            self.is_out_of_stock = False
+
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return self.crop_name
+    
+class Cart(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    items = models.ManyToManyField('FarmerProduct', through='CartItem')
+    total_price = models.DecimalField(decimal_places=2, max_digits=10, default=0)
+
+    def __str__(self):
+        return f"Cart for {self.user.username}"
+
+    def update_total_price(self):
+        total_price = sum(item.total_price for item in self.cartitem_set.all())
+        self.total_price = total_price
+        self.save()
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey('FarmerProduct', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+    total_price = models.DecimalField(decimal_places=2, max_digits=10, default=0)
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name} in cart for {self.cart.user.username}"
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.product.price * self.quantity
+        super(CartItem, self).save(*args, **kwargs)
+        self.cart.update_total_price()

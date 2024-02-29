@@ -1,0 +1,570 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: 0.0.0
+paths:
+  /farmease/agricultural-techniques/:
+    get:
+      operationId: farmease_agricultural_techniques_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_agricultural_techniques_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/agricultural-techniques/{id}/:
+    get:
+      operationId: farmease_agricultural_techniques_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_agricultural_techniques_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_agricultural_techniques_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /farmease/crops/:
+    get:
+      operationId: farmease_crops_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_crops_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /farmease/crops/{id}/:
+    get:
+      operationId: farmease_crops_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_crops_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_crops_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /farmease/farmer-products/:
+    get:
+      operationId: farmease_farmer_products_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_farmer_products_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /farmease/farmer-products/{id}/:
+    get:
+      operationId: farmease_farmer_products_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_farmer_products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_farmer_products_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /farmease/feedback/:
+    post:
+      operationId: farmease_feedback_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/feedback/{id}/:
+    get:
+      operationId: farmease_feedback_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_feedback_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_feedback_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /farmease/login/:
+    post:
+      operationId: farmease_login_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /farmease/news/:
+    get:
+      operationId: farmease_news_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_news_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/news/{id}/:
+    get:
+      operationId: farmease_news_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_news_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_news_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /farmease/register/:
+    get:
+      operationId: farmease_register_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_register_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /farmease/schemes/:
+    get:
+      operationId: farmease_schemes_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_schemes_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/schemes/{id}/:
+    get:
+      operationId: farmease_schemes_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_schemes_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_schemes_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /farmease/solutions/:
+    get:
+      operationId: farmease_solutions_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: farmease_solutions_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /farmease/solutions/{id}/:
+    get:
+      operationId: farmease_solutions_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: farmease_solutions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: farmease_solutions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /farmease/superuser/login/:
+    post:
+      operationId: farmease_superuser_login_create
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /farmease/user/agricultural-techniques/:
+    get:
+      operationId: farmease_user_agricultural_techniques_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/user/news/:
+    get:
+      operationId: farmease_user_news_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/user/schemes/:
+    get:
+      operationId: farmease_user_schemes_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/user/schemes/{id}/:
+    get:
+      operationId: farmease_user_schemes_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /farmease/users/:
+    get:
+      operationId: farmease_users_retrieve
+      tags:
+      - farmease
+      security:
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+components:
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

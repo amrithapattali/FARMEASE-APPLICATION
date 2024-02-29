@@ -10,8 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework import serializers
-from .serializers import RegistrationSerializer, LoginSerializer,SchemeSerializer,UserSchemeSerializer,NewsSerializer,AgriculturalTechniqueSerializer,SolutionSerializer,CropSerializer, FeedbackSerializer, FarmerProductSerializer
-from .models import CustomUser,SchemeAdd,News, AgriculturalTechnique,Solution,Crop,Feedback,FarmerProduct
+from .serializers import RegistrationSerializer, LoginSerializer,SchemeSerializer,UserSchemeSerializer,NewsSerializer,AgriculturalTechniqueSerializer,SolutionSerializer,CropSerializer, FeedbackSerializer, FarmerProductSerializer, CartItemSerializer,CartItemDeleteSerializer
+from .models import CustomUser,SchemeAdd,News, AgriculturalTechnique,Solution,Crop,Feedback,FarmerProduct,CartItem,Cart
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAdminUser
@@ -105,8 +105,10 @@ class UserListView(APIView):
     def get(self, request, *args, **kwargs):
         users = CustomUser.objects.filter(is_superuser=False)
         serializer = RegistrationSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
+        if serializer.data:
+            return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+            return Response({"status":0,"Message":"No Purchases"},status=status.HTTP_200_OK)
 #Scheme add by admin
         
 class SchemeListCreateView(APIView):
@@ -403,32 +405,76 @@ class SolutionUpdateDeleteView(APIView):
         solution.delete()
         return Response({'msg': 'Deleted'})
     
+# class FeedbackCreateView(APIView):
+#     def post(self, request):
+#         serializer = FeedbackSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+#     def put(self, request):
+#         try:
+#             feedback_instance = Feedback.objects.get(pk=request.data['id'])
+#         except Feedback.DoesNotExist:
+#             return Response({"error": "Feedback does not exist"}, status=status.HTTP_404_NOT_FOUND)
+        
+#         serializer = FeedbackSerializer(instance=feedback_instance, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
 class FeedbackCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         serializer = FeedbackSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)  # Assign the current user to the 'user' field
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def put(self, request):
+
+class FeedbackDetailView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_feedback_object(self, pk):
         try:
-            feedback_instance = Feedback.objects.get(pk=request.data['id'])
+            return Feedback.objects.get(pk=pk)
         except Feedback.DoesNotExist:
             return Response({"error": "Feedback does not exist"}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = FeedbackSerializer(instance=feedback_instance, data=request.data)
+
+    def get(self, request, pk):
+        feedback = self.get_feedback_object(pk)
+        serializer = FeedbackSerializer(feedback)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        feedback = self.get_feedback_object(pk)
+        serializer = FeedbackSerializer(instance=feedback, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        feedback = self.get_feedback_object(pk)
+        feedback.delete()
+        return Response({'msg': 'Deleted'})
+    
     
 class FarmerProductListCreateView(APIView):
     def get(self, request):
         farmer_products = FarmerProduct.objects.all()
         serializer = FarmerProductSerializer(farmer_products, many=True)
-        return Response(serializer.data)
-
+        if serializer.data:
+                return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+                return Response({"status":0,"Message":"No product"},status=status.HTTP_204_NO_CONTENT)
+   
     def post(self, request):
         serializer = FarmerProductSerializer(data=request.data)
         if serializer.is_valid():
@@ -446,8 +492,11 @@ class FarmerProductDetailView(APIView):
     def get(self, request, pk):
         farmer_product = self.get_farmer_product_object(pk)
         serializer = FarmerProductSerializer(farmer_product)
-        return Response(serializer.data)
-
+        if serializer.data:
+                return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+                return Response({"status":0,"Message":"No product"},status=status.HTTP_204_NO_CONTENT)
+        
     def put(self, request, pk):
         farmer_product = self.get_farmer_product_object(pk)
         serializer = FarmerProductSerializer(instance=farmer_product, data=request.data)
@@ -460,3 +509,64 @@ class FarmerProductDetailView(APIView):
         farmer_product = self.get_farmer_product_object(pk)
         farmer_product.delete()
         return Response({'msg': 'Deleted'})
+
+class AddToCart(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CartItemSerializer
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        product_id = kwargs.get('product_id')
+        quantity = request.data.get('quantity')
+
+        if not product_id:
+            return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        product = get_object_or_404(models.Product, pk=product_id)
+
+        if quantity > product.quantity:
+            return Response({'error': 'That much product is not available'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            cart = Cart.objects.get(user=user)
+        except Cart.DoesNotExist:
+            cart = Cart.objects.create(user=user)
+
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product=product)
+            cart_item.quantity += quantity
+            cart_item.save()
+        except CartItem.DoesNotExist:
+            cart_item = CartItem.objects.create(cart=cart, product=product, quantity=quantity)
+
+        serializer = self.serializer_class(cart_item)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class CartItemsListview(APIView):
+    serializer_class=CartItemSerializer
+    queryset=CartItem.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request,format=None):
+        try:
+            user=self.request.user
+            query=CartItem.objects.filter(cart__user=user)
+            serializer = self.serializer_class(query, many=True)
+            if serializer.data:
+                return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+            else:
+                return Response({"status":0,"Messtage":"No items in cart"})
+        except:
+            return Response({"Message":"somthing went wrong"})
+        
+class CartItemDelete(APIView):
+    serializer_class = CartItemDeleteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            cart_item = CartItem.objects.get(pk=pk)
+        except CartItem.DoesNotExist:
+            return Response({"error": "Cart item does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+        cart_item.delete()
+        return Response({'msg': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)

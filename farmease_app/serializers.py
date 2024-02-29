@@ -101,7 +101,7 @@ class SolutionSerializer(serializers.ModelSerializer):
         crop.growth_period = crop_data.get('growth_period', crop.growth_period)
         crop.save()
 
-        instance.disease = validated_data.get('symptoms', instance.symptoms)
+        instance.symptoms = validated_data.get('symptoms', instance.symptoms)
         instance.solution = validated_data.get('solution', instance.solution)
         instance.description = validated_data.get('description', instance.description)
         instance.save()
@@ -117,4 +117,20 @@ class FeedbackSerializer(serializers.ModelSerializer):
 class FarmerProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerProduct
+        fields = '__all__'
+        
+        
+class CartItemSerializer(serializers.ModelSerializer):
+    productname = serializers.CharField(source='product.name', read_only=True)
+    price = serializers.DecimalField(source='product.price',decimal_places=2, max_digits=10, read_only=True)
+    user = serializers.CharField(source='cart.user', read_only=True)
+    user_id = serializers.IntegerField(source='cart.user.id', read_only=True)
+    total_price = serializers.DecimalField(source='cart.total_price',decimal_places=2, max_digits=10, read_only=True)
+    class Meta:
+        model = CartItem
+        fields = ['id', 'cart', 'productname', 'quantity','user','total_price','price','user_id']
+
+class CartItemDeleteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
         fields = '__all__'

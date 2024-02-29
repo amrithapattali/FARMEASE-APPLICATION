@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SuperuserLoginView, RegistrationView, LoginView, UserListView, SchemeListCreateView, SchemeUpdateDelete, UserSchemeListView, UserSchemeDetailView, NewsListCreateView, NewsUpdateDelete, UserNewsListView, AgriculturalTechniqueListCreateView, AgriculturalTechniqueUpdateDelete, UserAgriculturalTechniqueListView,CropListCreateView,CropUpdateDelete,SolutionListCreateView,SolutionUpdateDeleteView,FeedbackCreateView,FarmerProductListCreateView, FarmerProductDetailView
+from .views import SuperuserLoginView, RegistrationView, LoginView, UserListView, SchemeListCreateView, SchemeUpdateDelete, UserSchemeListView, UserSchemeDetailView, NewsListCreateView, NewsUpdateDelete, UserNewsListView, AgriculturalTechniqueListCreateView, AgriculturalTechniqueUpdateDelete, UserAgriculturalTechniqueListView,CropListCreateView,CropUpdateDelete,SolutionListCreateView,SolutionUpdateDeleteView,FeedbackCreateView,FeedbackDetailView,FarmerProductListCreateView, FarmerProductDetailView,AddToCart, CartItemsListview, CartItemDelete
 
 urlpatterns = [
     # Superuser login
@@ -48,5 +48,12 @@ urlpatterns = [
     
     path('farmer-products/', FarmerProductListCreateView.as_view(), name='farmer_product_list_create'),
     path('farmer-products/<int:pk>/', FarmerProductDetailView.as_view(), name='farmer_product_detail'),
+    
+    path('feedback/', FeedbackCreateView.as_view(), name='feedback_create'),
+    path('feedback/<int:pk>/', FeedbackDetailView.as_view(), name='feedback_detail'),
+    
+    path('add-to-cart/<int:product_id>/', AddToCart.as_view(), name='add_to_cart'),
+    path('cart-items/', CartItemsListview.as_view(), name='cart_items_list'),
+    path('cart-item-delete/<int:pk>/', CartItemDelete.as_view(), name='cart_item_delete'),
 ]
 
