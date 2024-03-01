@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SuperuserLoginView, RegistrationView, LoginView, UserListView, SchemeListCreateView, SchemeUpdateDelete, UserSchemeListView, UserSchemeDetailView, NewsListCreateView, NewsUpdateDelete, UserNewsListView, AgriculturalTechniqueListCreateView, AgriculturalTechniqueUpdateDelete, UserAgriculturalTechniqueListView,CropListCreateView,CropUpdateDelete,SolutionListCreateView,SolutionUpdateDeleteView,FeedbackCreateView,FeedbackDetailView,FarmerProductListCreateView, FarmerProductDetailView,AddToCart, CartItemsListview, CartItemDelete
+from .views import SuperuserLoginView, RegistrationView, LoginView, UserListView, SchemeListCreateView, SchemeUpdateDelete, UserSchemeListView, UserSchemeDetailView, NewsListCreateView, NewsUpdateDelete, UserNewsListView, AgriculturalTechniqueListCreateView, AgriculturalTechniqueUpdateDelete, UserAgriculturalTechniqueListView,CropListCreateView,CropUpdateDelete,SolutionListCreateView,SolutionUpdateDeleteView,FeedbackCreateView,FeedbackDetailView,FarmerProductListCreateView, FarmerProductDetailView,AgricultureOfficeListCreateView,AgricultureOfficeUpdateDelete,UserAgricultureOfficeListView,FarmCartAPIView,FarmOrderCreateAPIView
 
 urlpatterns = [
     # Superuser login
@@ -52,8 +52,15 @@ urlpatterns = [
     path('feedback/', FeedbackCreateView.as_view(), name='feedback_create'),
     path('feedback/<int:pk>/', FeedbackDetailView.as_view(), name='feedback_detail'),
     
-    path('add-to-cart/<int:product_id>/', AddToCart.as_view(), name='add_to_cart'),
-    path('cart-items/', CartItemsListview.as_view(), name='cart_items_list'),
-    path('cart-item-delete/<int:pk>/', CartItemDelete.as_view(), name='cart_item_delete'),
+    # path('AddToCart/<int:product_id>/<int:quantity>/', AddToCart.as_view(), name='add_to_cart'),
+    # path('cart-items/', CartItemsListview.as_view(), name='cart_items_list'),
+    # path('cart-item-delete/<int:pk>/', CartItemDelete.as_view(), name='cart_item_delete'),
+    
+     path('agriculture-offices/', AgricultureOfficeListCreateView.as_view(), name='agriculture_office_list_create'),
+    path('agriculture-offices/<int:pk>/', AgricultureOfficeUpdateDelete.as_view(), name='agriculture_office_detail'),
+    path('user/agriculture-offices/', UserAgricultureOfficeListView.as_view(), name='user_agriculture_office_list'),
+    
+     path('farmcart/', FarmCartAPIView.as_view(), name='formcart'),
+    path('farm-orders/', FarmOrderCreateAPIView.as_view(), name='farm-order-create'),
 ]
 

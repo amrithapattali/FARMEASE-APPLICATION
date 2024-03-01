@@ -1,6 +1,8 @@
 from django.shortcuts import render
 
 # Create your views here.
+from rest_framework import generics
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, login
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
@@ -10,12 +12,19 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework import serializers
-from .serializers import RegistrationSerializer, LoginSerializer,SchemeSerializer,UserSchemeSerializer,NewsSerializer,AgriculturalTechniqueSerializer,SolutionSerializer,CropSerializer, FeedbackSerializer, FarmerProductSerializer, CartItemSerializer,CartItemDeleteSerializer
-from .models import CustomUser,SchemeAdd,News, AgriculturalTechnique,Solution,Crop,Feedback,FarmerProduct,CartItem,Cart
+from .serializers import RegistrationSerializer, LoginSerializer,SchemeSerializer,UserSchemeSerializer,NewsSerializer,AgriculturalTechniqueSerializer,SolutionSerializer,CropSerializer, FeedbackSerializer, FarmerProductSerializer,FarmOrderSerializer
+from .models import CustomUser,SchemeAdd,News, AgriculturalTechnique,Solution,Crop,Feedback,FarmerProduct,FarmCart,AgricultureOffice, FarmOrder
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAdminUser
 from django.core.exceptions import ObjectDoesNotExist
+
+# import razorpay
+from django.db import transaction
+from django.conf import settings
+from django.http import JsonResponse
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 class SuperuserLoginView(APIView):
     permission_classes = [AllowAny]
@@ -143,6 +152,7 @@ class SchemeListCreateView(APIView):
 
 #scheme update by admin
 class SchemeUpdateDelete(APIView):
+    
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
     def get(self,request,**kwargs):
@@ -260,6 +270,78 @@ class UserNewsListView(APIView):
         news = News.objects.all()
         serializer = NewsSerializer(news, many=True)
         return Response(serializer.data)
+    
+ #AgricultureOffice add by admin   
+    
+class AgricultureOfficeListCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        try:
+            super_admin = CustomUser.objects.get(is_superuser=True)
+        except ObjectDoesNotExist:
+            return Response({"error": "Super admin user does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        mutable_data = request.data.copy()
+        mutable_data['created_by'] = super_admin.id
+
+        serializer = AgricultureOfficeSerializer(data=mutable_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        agriculture_offices = AgricultureOffice.objects.all()
+        serializer = AgricultureOfficeSerializer(agriculture_offices, many=True)
+        if serializer.data:
+            return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+            return Response({"status":0,"Message":"No agriculture office"},status=status.HTTP_204_NO_CONTENT)
+
+class AgricultureOfficeUpdateDelete(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
+    def get_agriculture_office_object(self, pk):
+        try:
+            return AgricultureOffice.objects.get(pk=pk)
+        except AgricultureOffice.DoesNotExist:
+            return Response({"error": "Agriculture office does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, pk):
+        agriculture_office = self.get_agriculture_office_object(pk)
+        serializer = AgricultureOfficeSerializer(agriculture_office)
+        if serializer.data:
+            return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+            return Response({"status":0,"Message":"No agriculture office"},status=status.HTTP_204_NO_CONTENT)
+    
+    def put(self, request, pk):
+        agriculture_office = self.get_agriculture_office_object(pk)
+        serializer = AgricultureOfficeSerializer(instance=agriculture_office, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        agriculture_office = self.get_agriculture_office_object(pk)
+        agriculture_office.delete()
+        return Response({'msg': 'Deleted'})
+    
+    
+#Agriculturaloffice  view by User/Farmer
+
+class UserAgricultureOfficeListView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        agriculture_offices = AgricultureOffice.objects.all()
+        serializer = AgricultureOfficeSerializer(agriculture_offices, many=True)
+        return Response(serializer.data)
  
  #AgriculturalTechnique add by admin   
     
@@ -285,7 +367,10 @@ class AgriculturalTechniqueListCreateView(APIView):
     def get(self, request):
         techniques = AgriculturalTechnique.objects.all()
         serializer = AgriculturalTechniqueSerializer(techniques, many=True)
-        return Response(serializer.data)
+        if serializer.data:
+                return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+                return Response({"status":0,"Message":"No product"},status=status.HTTP_204_NO_CONTENT)
 
 
 class AgriculturalTechniqueUpdateDelete(APIView):
@@ -301,8 +386,10 @@ class AgriculturalTechniqueUpdateDelete(APIView):
     def get(self, request, pk):
         technique = self.get_technique_object(pk)
         serializer = AgriculturalTechniqueSerializer(technique)
-        return Response(serializer.data)
-
+        if serializer.data:
+                return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+                return Response({"status":0,"Message":"No product"},status=status.HTTP_204_NO_CONTENT)
     def put(self, request, pk):
         technique = self.get_technique_object(pk)
         serializer = AgriculturalTechniqueSerializer(instance=technique, data=request.data)
@@ -324,8 +411,13 @@ class UserAgriculturalTechniqueListView(APIView):
         techniques = AgriculturalTechnique.objects.all()
         serializer = AgriculturalTechniqueSerializer(techniques, many=True)
         return Response(serializer.data)
+    
+#Crop add by admin 
 
 class CropListCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
     def get(self, request):
         crops = Crop.objects.all()
         serializer = CropSerializer(crops, many=True)
@@ -366,8 +458,13 @@ class CropUpdateDelete(APIView):
         crop.delete()
         return Response({'msg': 'Deleted'})
     
+#solution add by admin 
 
 class SolutionListCreateView(APIView):
+    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+
     def get(self, request):
         solutions = Solution.objects.all()
         serializer = SolutionSerializer(solutions, many=True)
@@ -381,6 +478,9 @@ class SolutionListCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class SolutionUpdateDeleteView(APIView):
+    
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     def get_solution_object(self, pk):
         try:
             return Solution.objects.get(pk=pk)
@@ -390,8 +490,11 @@ class SolutionUpdateDeleteView(APIView):
     def get(self, request, pk):
         solution = self.get_solution_object(pk)
         serializer = SolutionSerializer(solution)
-        return Response(serializer.data)
-
+        if serializer.data:
+            return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+        else:
+            return Response({"status":0,"Message":"No solution"},status=status.HTTP_204_NO_CONTENT)
+    
     def put(self, request, pk):
         solution = self.get_solution_object(pk)
         serializer = SolutionSerializer(instance=solution, data=request.data)
@@ -405,26 +508,7 @@ class SolutionUpdateDeleteView(APIView):
         solution.delete()
         return Response({'msg': 'Deleted'})
     
-# class FeedbackCreateView(APIView):
-#     def post(self, request):
-#         serializer = FeedbackSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-#     def put(self, request):
-#         try:
-#             feedback_instance = Feedback.objects.get(pk=request.data['id'])
-#         except Feedback.DoesNotExist:
-#             return Response({"error": "Feedback does not exist"}, status=status.HTTP_404_NOT_FOUND)
-        
-#         serializer = FeedbackSerializer(instance=feedback_instance, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     
 class FeedbackCreateView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -467,6 +551,8 @@ class FeedbackDetailView(APIView):
     
     
 class FarmerProductListCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         farmer_products = FarmerProduct.objects.all()
         serializer = FarmerProductSerializer(farmer_products, many=True)
@@ -509,64 +595,353 @@ class FarmerProductDetailView(APIView):
         farmer_product = self.get_farmer_product_object(pk)
         farmer_product.delete()
         return Response({'msg': 'Deleted'})
-
-class AddToCart(APIView):
+    
+class FarmCartAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CartItemSerializer
+    authentication_classes = [TokenAuthentication]
 
     def post(self, request, *args, **kwargs):
-        user = request.user
-        product_id = kwargs.get('product_id')
-        quantity = request.data.get('quantity')
-
-        if not product_id:
-            return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        product = get_object_or_404(models.Product, pk=product_id)
-
-        if quantity > product.quantity:
-            return Response({'error': 'That much product is not available'}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
-            cart = Cart.objects.get(user=user)
-        except Cart.DoesNotExist:
-            cart = Cart.objects.create(user=user)
+            user = request.user
+            crop_name = request.data.get('crop_name')
+            quantity = int(request.data.get('quantity', 1))
 
-        try:
-            cart_item = CartItem.objects.get(cart=cart, product=product)
-            cart_item.quantity += quantity
-            cart_item.save()
-        except CartItem.DoesNotExist:
-            cart_item = CartItem.objects.create(cart=cart, product=product, quantity=quantity)
+            farm_product = FarmerProduct.objects.get(crop_name=crop_name)
 
-        serializer = self.serializer_class(cart_item)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-class CartItemsListview(APIView):
-    serializer_class=CartItemSerializer
-    queryset=CartItem.objects.all()
-    permission_classes = [IsAuthenticated]
+            # Check if the item is already in the cart for the specific user
+            cart_item, created = FarmCart.objects.get_or_create(
+                user=user,
+                crop_name=farm_product.crop_name,
+                defaults={
+                    'posted_by': farm_product.posted_by.username,
+                    'image': farm_product.image,
+                    'price': farm_product.price,
+                    'quantity': 0,  # Set initial quantity to 0
+                    'description': farm_product.description,
+                }
+            )
 
-    def get(self,request,format=None):
-        try:
-            user=self.request.user
-            query=CartItem.objects.filter(cart__user=user)
-            serializer = self.serializer_class(query, many=True)
-            if serializer.data:
-                return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+            # If quantity is negative, decrement the quantity
+            if quantity < 0:
+                if cart_item.quantity + quantity <= 0:
+                    # If quantity becomes non-positive, remove the item from the cart
+                    cart_item.delete()
+                else:
+                    # Update quantity and price
+                    cart_item.quantity += quantity
+                    cart_item.price = farm_product.price * cart_item.quantity
+                    cart_item.save()
             else:
-                return Response({"status":0,"Messtage":"No items in cart"})
-        except:
-            return Response({"Message":"somthing went wrong"})
+                # Update quantity and price for positive quantity
+                cart_item.quantity += quantity
+                cart_item.price = farm_product.price * cart_item.quantity
+                cart_item.save()
+
+            # Get all cart items
+            cart_items = FarmCart.objects.filter(user=user)
+
+            # Create a list of items with names and quantities
+            items_list = [{'name': item.crop_name, 'quantity': item.quantity} for item in cart_items]
+
+            # Calculate total sum of prices in the cart
+            total_price = sum(item.price for item in cart_items)
+            total_quantity_bought = sum(item.quantity for item in cart_items)
+
+            response_data = {
+                'status': 1,  # Status 1 indicates success
+                'message': 'Item added to cart successfully.',
+                'items': items_list,
+                'total_price': total_price,
+                'total_quantity_bought': total_quantity_bought
+            }
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except FarmerProduct.DoesNotExist:
+            response_data = {'status': 0, 'error': 'FarmProduct not found.'}
+            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            response_data = {'status': 0, 'error': str(e)}
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            cart_items = FarmCart.objects.filter(user=user)
+
+            # Create a list of items with names, quantities, and additional details
+            items_list = [
+                {
+                    'name': item.crop_name,
+                    'posted_by': item.posted_by,
+                    'image': str(item.image),
+                    'price': item.price,
+                    'quantity': item.quantity,
+                    'description': item.description,
+                }
+                for item in cart_items
+            ]
+
+            # Calculate total sum of prices in the cart
+            total_price = sum(item.price for item in cart_items)
+            total_quantity_bought = sum(item.quantity for item in cart_items)
+
+            response_data = {
+                'status': 1,  # Status 1 indicates success
+                'items': items_list,
+                'total_price': total_price,
+                'total_quantity_bought': total_quantity_bought
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            response_data = {'status': 0, 'error': str(e)}
+            return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-class CartItemDelete(APIView):
-    serializer_class = CartItemDeleteSerializer
+
+
+
+
+class FarmOrderCreateAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, pk):
+    def get(self, request, *args, **kwargs):
         try:
-            cart_item = CartItem.objects.get(pk=pk)
-        except CartItem.DoesNotExist:
-            return Response({"error": "Cart item does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            user = request.user
+            farm_orders = FarmOrder.objects.filter(username=user)
 
-        cart_item.delete()
-        return Response({'msg': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)
+            serializer = FarmOrderSerializer(farm_orders, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            with transaction.atomic():
+                user = request.user
+                address = request.data.get('address', '')
+                cart_items = FarmCart.objects.filter(user=user)
+
+                crop_names = []
+                quantities = []
+                prices = []
+                total_price = 0.0
+
+                for cart_item in cart_items:
+                    crop_names.append(cart_item.crop_name)
+                    quantities.append(cart_item.quantity)
+                    prices.append(cart_item.price)
+                    total_price += cart_item.price
+
+                order_date = timezone.now()
+                estimated_date = (order_date + timedelta(days=10)).date()
+
+                # Convert lists to strings with appropriate format
+                crop_names_str = str(crop_names)
+                quantities_str = str(quantities)
+                prices_str = str(prices)
+
+                farm_order = FarmOrder.objects.create(
+                    username=user,
+                    address=address,
+                    crop_names=crop_names_str,
+                    quantities=quantities_str,
+                    prices=prices_str,
+                    total=total_price,
+                    order_date=order_date,
+                    estimated_date=estimated_date,
+                )
+
+                cart_items.delete()
+
+                farm_order_serializer = FarmOrderSerializer(farm_order)
+                farm_order_data = farm_order_serializer.data
+
+                return Response(farm_order_data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+
+# class AddToCart(generics.CreateAPIView):
+#     permission_classes =[IsAuthenticated]
+#     serializer_class = CartItemSerializer
+
+#     def post(self, request, *args, **kwargs):     
+#         user = request.user
+#         product_id = self.kwargs.get('product_id')
+#         products = get_object_or_404(FarmerProduct, pk=product_id)
+#         quantity = self.kwargs.get('quantity')
+#         if quantity <= products.quantity:
+#             if not product_id:
+#                 return Response({'error': 'Product ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+#             try:
+#                 cart = Cart.objects.get(user=user)
+#             except Cart.DoesNotExist:
+#                 cart = Cart.objects.create(user=user)
+#             product = FarmerProduct.objects.get(pk=product_id)  
+#             try:
+#                 cart_item = CartItem.objects.get(cart=cart, product=product)
+#                 cart_item.quantity += quantity
+#                 cart_item.save()
+#             except CartItem.DoesNotExist:
+#                 cart_item = CartItem.objects.create(cart=cart, product=product, quantity=quantity)
+
+#             serializer = self.get_serializer(cart_item)
+#         else:
+#             return Response({'error':'That much product not available'}, status=status.HTTP_400_BAD_REQUEST)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+# class CartItemsListview(APIView):
+#     serializer_class=CartItemSerializer
+#     queryset=CartItem.objects.all()
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self,request,format=None):
+#         try:
+#             user=self.request.user
+#             query=CartItem.objects.filter(cart__user=user)
+#             serializer = self.serializer_class(query, many=True)
+#             if serializer.data:
+#                 return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
+#             else:
+#                 return Response({"status":0,"Messtage":"No items in cart"})
+#         except:
+#             return Response({"Message":"somthing went wrong"})
+        
+# class CartItemDelete(APIView):
+#     serializer_class = CartItemDeleteSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def delete(self, request, pk):
+#         try:
+#             cart_item = CartItem.objects.get(pk=pk)
+#         except CartItem.DoesNotExist:
+#             return Response({"error": "Cart item does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+#         cart_item.delete()
+#         return Response({'msg': 'Deleted'}, status=status.HTTP_204_NO_CONTENT)
+    
+    
+# class OrderProductAPIView(APIView):
+#     def post(self, request):
+#         try:
+#             user = request.user
+#             address = request.data.get('address', '')
+#             cart_items = CartItem.objects.filter(cart__user=user)
+
+#             crop_names = []
+#             quantities = []
+#             prices = []
+#             total_price = 0
+
+#             for cart_item in cart_items:
+#                 crop_names.append(cart_item.product)
+#                 quantities.append(cart_item.quantity)
+#                 prices.append(cart_item.total_price)
+#                 total_price += cart_item.total_price
+
+#             order_date = timezone.now()
+#             estimated_date = (order_date + timedelta(days=10)).date()
+
+#             farm_order = FarmOrder.objects.create(
+#                 username=user,
+#                 address=address,
+#                 crop_names=crop_names,
+#                 quantities=quantities,
+#                 prices=prices,
+#                 total=total_price,
+#                 order_date=order_date,
+#                 estimated_date=estimated_date,
+#             )
+
+#             cart_items.delete()
+
+#             serializer = FarmOrderSerializer(farm_order)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#         except Exception as e:
+#             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# class ViewOrderAPIView(APIView):
+#     def get(self, request):
+#         try:
+#             user = request.user
+#             farm_orders = FarmOrder.objects.filter(username=user)
+#             serializer = FarmOrderSerializer(farm_orders, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    
+# class FarmOrderCreateAPIView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, *args, **kwargs):
+
+#         try:
+#             user = request.user
+#             farm_orders = FarmOrder.objects.filter(username=user)
+
+#             serializer = FarmOrderSerializer(farm_orders, many=True)
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    
+#     def post(self, request, *args, **kwargs):
+#         try:
+#             with transaction.atomic():
+#                 user = request.user
+#                 address = request.data.get('address', '')
+#                 # Filter cart items based on the user
+#                 cart_items = CartItem.objects.filter(cart__user=user)
+
+#                 crop_names = []
+#                 quantities = []
+#                 prices = []
+#                 total_price = 0.0
+
+#             for cart_item in cart_items:
+#                 crop_names.append(cart_item.product)
+#                 quantities.append(cart_item.quantity)
+#                 prices.append(cart_item.total_price )
+#                 total_price += cart_item.total_price 
+
+#             order_date = timezone.now()
+#             estimated_date = (order_date + timedelta(days=10)).date()
+
+#             # Convert lists to strings with appropriate format
+#             crop_names_str = str(crop_names)
+#             quantities_str = str(quantities)
+#             prices_str = str(prices)
+
+#             farm_order = FarmOrder.objects.create(
+#                 username=user,
+#                 address=address,
+#                 crop_names=crop_names_str,
+#                 quantities=quantities_str,
+#                 prices=prices_str,
+#                 total=total_price,
+#                 order_date=order_date,
+#                 estimated_date=estimated_date,
+#             )
+
+#             cart_items.delete()
+
+#             farm_order_serializer = FarmOrderSerializer(farm_order)
+#             farm_order_data = farm_order_serializer.data
+
+#             return Response(farm_order_data, status=status.HTTP_201_CREATED)
+
+#         except Exception as e:
+#            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

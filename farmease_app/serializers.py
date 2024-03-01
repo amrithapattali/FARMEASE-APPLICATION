@@ -119,18 +119,81 @@ class FarmerProductSerializer(serializers.ModelSerializer):
         model = FarmerProduct
         fields = '__all__'
         
-        
-class CartItemSerializer(serializers.ModelSerializer):
-    productname = serializers.CharField(source='product.name', read_only=True)
-    price = serializers.DecimalField(source='product.price',decimal_places=2, max_digits=10, read_only=True)
-    user = serializers.CharField(source='cart.user', read_only=True)
-    user_id = serializers.IntegerField(source='cart.user.id', read_only=True)
-    total_price = serializers.DecimalField(source='cart.total_price',decimal_places=2, max_digits=10, read_only=True)
+class FarmCartSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CartItem
-        fields = ['id', 'cart', 'productname', 'quantity','user','total_price','price','user_id']
-
-class CartItemDeleteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CartItem
+        model = FarmCart
         fields = '__all__'
+
+
+class FarmOrderSerializer(serializers.ModelSerializer):
+    crop_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FarmOrder
+        fields = '__all__'
+
+    def get_crop_details(self, instance):
+        crop_names = instance.crop_names
+        quantities = instance.quantities
+        prices = instance.prices
+
+        if crop_names is None or quantities is None or prices is None:
+            return []
+
+        crop_names = crop_names.strip('[]').split(', ')
+        quantities = quantities.strip('[]').split(', ')
+        prices = prices.strip('[]').split(', ')
+
+        crop_details = []
+
+        for name, quantity, price in zip(crop_names, quantities, prices):
+            crop_details.append({
+                "name": name.strip("'"),
+                "quantity": quantity.strip("' "),
+                "price": price.strip("' "),
+            })
+
+        return crop_details
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        representation.pop('crop_names', None)
+        representation.pop('quantities', None)
+        representation.pop('prices', None)
+
+        response_data = {
+            "status": 1,
+            "data": representation
+        }
+        if instance.status == 'cancelled':
+            response_data["status"] = 0
+        return response_data
+    
+        
+        
+# class CartItemSerializer(serializers.ModelSerializer):
+#     productname = serializers.CharField(source='product.name', read_only=True)
+#     price = serializers.DecimalField(source='product.price',decimal_places=2, max_digits=10, read_only=True)
+#     user = serializers.CharField(source='cart.user', read_only=True)
+#     user_id = serializers.IntegerField(source='cart.user.id', read_only=True)
+#     total_price = serializers.DecimalField(source='cart.total_price',decimal_places=2, max_digits=10, read_only=True)
+#     class Meta:
+#         model = CartItem
+#         fields = ['id', 'cart', 'productname', 'quantity','user','total_price','price','user_id']
+
+# class CartItemDeleteSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CartItem
+#         fields = '__all__'
+        
+# class AgricultureOfficeSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = AgricultureOffice
+#         fields = ['id', 'name', 'location', 'contact_number', 'email']
+        
+        
+# class FarmOrderSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = FarmOrder
+#         fields = '__all__'

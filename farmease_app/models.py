@@ -43,9 +43,14 @@ class SchemeAdd(models.Model):
     link = models.CharField(max_length=1000, null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True, null=True)
 
-    def contains_age(self, age_to_check):
-        return self.start_age <= age_to_check <= self.end_age
+    # def contains_age(self, age_to_check):
+    #     return self.start_age <= age_to_check <= self.end_age
     
+    def __str__(self):
+     if self.scheme_name:
+        return self.scheme_name
+     else:
+        return "SchemeAdd Object ({})".format(self.pk)
 
     
 class News(models.Model):
@@ -55,6 +60,15 @@ class News(models.Model):
     
     def __str__(self):
         return self.title
+    
+class AgricultureOffice(models.Model):
+    name = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
+    contact_number = models.CharField(max_length=15)
+    email = models.EmailField(max_length=255)
+
+    def __str__(self):
+        return self.name
     
 class AgriculturalTechnique(models.Model):
     title = models.CharField(max_length=255)
@@ -121,29 +135,97 @@ class FarmerProduct(models.Model):
     def __str__(self):
         return self.crop_name
     
-class Cart(models.Model):
+class FarmCart(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    items = models.ManyToManyField('FarmerProduct', through='CartItem')
-    total_price = models.DecimalField(decimal_places=2, max_digits=10, default=0)
-
+    posted_by = models.CharField(max_length=150, null=True, blank=True)
+    crop_name = models.CharField(max_length=100, null=True, blank=True)
+    image = models.ImageField(upload_to='equipment/', null=True, blank=True)
+    price = models.FloatField()
+    quantity = models.IntegerField(default=1)
+    description = models.CharField(max_length=1000, null=True, blank=True)
+    
     def __str__(self):
-        return f"Cart for {self.user.username}"
-
-    def update_total_price(self):
-        total_price = sum(item.total_price for item in self.cartitem_set.all())
-        self.total_price = total_price
+        return self.crop_name
+    
+    def update_quantity(self, quantity=None):
+        old_quantity = self.quantity
+        if quantity is not None:
+            self.quantity = quantity
+        else:
+            self.quantity += 1
+        self.price = self.price * (self.quantity / old_quantity)  # Adjust the price based on the new quantity
         self.save()
 
-class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
-    product = models.ForeignKey('FarmerProduct', on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=0)
-    total_price = models.DecimalField(decimal_places=2, max_digits=10, default=0)
 
-    def __str__(self):
-        return f"{self.quantity} x {self.product.name} in cart for {self.cart.user.username}"
+class FarmOrder(models.Model):
+    username = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    address = models.CharField(max_length=1000)
+    
+    # Fields to store details of ordered items
+    crop_names = models.TextField(null=True, blank=True)
+    quantities = models.TextField(null=True, blank=True)
+    prices = models.TextField(null=True, blank=True)
 
-    def save(self, *args, **kwargs):
-        self.total_price = self.product.price * self.quantity
-        super(CartItem, self).save(*args, **kwargs)
-        self.cart.update_total_price()
+    total = models.FloatField()
+    order_date = models.DateTimeField(auto_now_add=True)
+    estimated_date = models.DateField(blank=True, null=True)
+    
+    
+    status_options = (
+        ("order-placed", "order-placed"),
+        ("cancelled", "cancelled"),
+    )
+    status = models.CharField(max_length=200, choices=status_options, default="order-placed")
+
+
+    
+# class Cart(models.Model):
+#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+#     items = models.ManyToManyField('FarmerProduct', through='CartItem')
+#     total_price = models.DecimalField(decimal_places=2, max_digits=10, default=0)
+
+#     def __str__(self):
+#         return f"Cart for {self.user.username}"
+
+#     def update_total_price(self):
+#         total_price = sum(item.total_price for item in self.cartitem_set.all())
+#         self.total_price = total_price
+#         self.save()
+
+# class CartItem(models.Model):
+#     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+#     product = models.ForeignKey('FarmerProduct', on_delete=models.CASCADE)
+#     quantity = models.PositiveIntegerField(default=0)
+#     total_price = models.DecimalField(decimal_places=2, max_digits=10, default=0)
+
+#     def __str__(self):
+#         return f"{self.quantity} x {self.product.name} in cart for {self.cart.user.username}"
+
+#     def save(self, *args, **kwargs):
+#         self.total_price = self.product.price * self.quantity
+#         super(CartItem, self).save(*args, **kwargs)
+#         self.cart.update_total_price()
+        
+        
+# class FarmOrder(models.Model):
+#     username = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+#     address = models.CharField(max_length=1000)
+    
+#     # Fields to store details of ordered items
+#     crop_names = models.TextField(null=True, blank=True)
+#     quantities = models.TextField(null=True, blank=True)
+#     prices = models.TextField(null=True, blank=True)
+
+#     total = models.DecimalField(decimal_places=2, max_digits=10, default=0)
+#     order_date = models.DateTimeField(auto_now_add=True)
+#     estimated_date = models.DateField(blank=True, null=True)
+    
+    
+#     status_options = (
+#         ("order-placed", "order-placed"),
+#         ("cancelled", "cancelled"),
+#     )
+#     status = models.CharField(max_length=200, choices=status_options, default="order-placed")
+        
+
+
