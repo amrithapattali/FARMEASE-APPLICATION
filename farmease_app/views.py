@@ -12,8 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework import serializers
-from .serializers import RegistrationSerializer, LoginSerializer,SchemeSerializer,UserSchemeSerializer,NewsSerializer,AgriculturalTechniqueSerializer,SolutionSerializer,CropSerializer, FeedbackSerializer, FarmerProductSerializer,FarmOrderSerializer
-from .models import CustomUser,SchemeAdd,News, AgriculturalTechnique,Solution,Crop,Feedback,FarmerProduct,FarmCart,AgricultureOffice, FarmOrder
+from .serializers import *
+from .serializers import AgricultureOfficeSerializer
+from .models import  *
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAdminUser
@@ -28,6 +29,7 @@ from django.utils import timezone
 
 class SuperuserLoginView(APIView):
     permission_classes = [AllowAny]
+   
 
     @method_decorator(csrf_exempt)
     def post(self, request, *args, **kwargs):
@@ -111,6 +113,8 @@ class LoginView(APIView):
 #admin view all the user /farmer details
     
 class UserListView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     def get(self, request, *args, **kwargs):
         users = CustomUser.objects.filter(is_superuser=False)
         serializer = RegistrationSerializer(users, many=True)
@@ -229,6 +233,20 @@ class NewsListCreateView(APIView):
         serializer = NewsSerializer(news, many=True)
         return Response(serializer.data)
     
+#view specific news by user
+
+class UserNewsDetailView(APIView):
+   
+
+    def get(self, request, pk):
+        try:
+            news = News.objects.get(id=pk)
+        except News.DoesNotExist:
+            return Response({"error": "Scheme not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = NewsSerializer(news)
+        return Response({'status':1,'data':serializer.data})    
+
 #News update by admin
 
 class NewsUpdateDelete(APIView):
@@ -459,95 +477,142 @@ class CropUpdateDelete(APIView):
         return Response({'msg': 'Deleted'})
     
 #solution add by admin 
+from django.http import Http404
 
-class SolutionListCreateView(APIView):
+
     
+class SolutionAPIView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
-
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         solutions = Solution.objects.all()
         serializer = SolutionSerializer(solutions, many=True)
         return Response(serializer.data)
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
+        serializer = SolutionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class SolutionAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
+    def get(self, request, pk=None, *args, **kwargs):
+        # Retrieve a single solution or all solutions
+        if pk:
+            solution = self.get_object(pk)
+            serializer = SolutionSerializer(solution)
+        else:
+            solutions = Solution.objects.all()
+            serializer = SolutionSerializer(solutions, many=True)
+
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        # Create a new solution
         serializer = SolutionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class SolutionUpdateDeleteView(APIView):
-    
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAdminUser]
-    def get_solution_object(self, pk):
+    def put(self, request, pk, *args, **kwargs):
+        print(request.data)  # Add this line to inspect the request data
+        solution = self.get_object(pk)
+        serializer = SolutionSerializer(solution, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            print(serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def delete(self, request, pk, *args, **kwargs):
+        # Delete an existing solution
+        solution = self.get_object(pk)
+        solution.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_object(self, pk):
+        # Helper method to get a Solution instance by primary key
         try:
             return Solution.objects.get(pk=pk)
         except Solution.DoesNotExist:
-            return Response({"error": "Solution does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            raise Http404
 
-    def get(self, request, pk):
-        solution = self.get_solution_object(pk)
-        serializer = SolutionSerializer(solution)
-        if serializer.data:
-            return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
-        else:
-            return Response({"status":0,"Message":"No solution"},status=status.HTTP_204_NO_CONTENT)
-    
-    def put(self, request, pk):
-        solution = self.get_solution_object(pk)
-        serializer = SolutionSerializer(instance=solution, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk):
-        solution = self.get_solution_object(pk)
-        solution.delete()
-        return Response({'msg': 'Deleted'})
-    
+class SolutionView(APIView):
+    def get(self, request):
+        symptom = request.query_params.get('symptom', '')
 
-    
-class FeedbackCreateView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serializer = FeedbackSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)  # Assign the current user to the 'user' field
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class FeedbackDetailView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_feedback_object(self, pk):
         try:
-            return Feedback.objects.get(pk=pk)
-        except Feedback.DoesNotExist:
-            return Response({"error": "Feedback does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            solution = Solution.objects.get(symptoms__icontains=symptom)
+            serializer = SolutionSerializer(solution)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get(self, request, pk):
-        feedback = self.get_feedback_object(pk)
-        serializer = FeedbackSerializer(feedback)
-        return Response(serializer.data)
+        except Solution.DoesNotExist:
+            return Response({'detail': 'Symptom not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    def put(self, request, pk):
-        feedback = self.get_feedback_object(pk)
-        serializer = FeedbackSerializer(instance=feedback, data=request.data)
+    # You can add the following logic to handle symptom searches using a POST request
+    def post(self, request):
+        serializer = SymptomSearchSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            symptom = serializer.validated_data['symptom']
 
-    def delete(self, request, pk):
-        feedback = self.get_feedback_object(pk)
-        feedback.delete()
-        return Response({'msg': 'Deleted'})
+            try:
+                solution = Solution.objects.get(symptoms__icontains=symptom)
+                serializer = SolutionSerializer(solution)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            except Solution.DoesNotExist:
+                return Response({'detail': 'Symptom not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+       
+    
+# class FeedbackCreateView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request):
+#         serializer = FeedbackSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save(user=request.user)  # Assign the current user to the 'user' field
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class FeedbackDetailView(APIView):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     def get_feedback_object(self, pk):
+#         try:
+#             return Feedback.objects.get(pk=pk)
+#         except Feedback.DoesNotExist:
+#             return Response({"error": "Feedback does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+#     def get(self, request, pk):
+#         feedback = self.get_feedback_object(pk)
+#         serializer = FeedbackSerializer(feedback)
+#         return Response(serializer.data)
+
+#     def put(self, request, pk):
+#         feedback = self.get_feedback_object(pk)
+#         serializer = FeedbackSerializer(instance=feedback, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, pk):
+#         feedback = self.get_feedback_object(pk)
+#         feedback.delete()
+#         return Response({'msg': 'Deleted'})
     
     
 class FarmerProductListCreateView(APIView):

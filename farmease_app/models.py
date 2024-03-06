@@ -90,13 +90,12 @@ class Crop(models.Model):
         return self.name
     
 class Solution(models.Model):
-    crop = models.ForeignKey(Crop, on_delete=models.CASCADE)
     symptoms = models.CharField(max_length=255)
     solution = models.TextField()
     description = models.TextField()
 
     def __str__(self):
-        return f"{self.symptoms} - {self.crop.name}"
+        return self.symptoms
     
 class Feedback(models.Model):
     solution = models.ForeignKey('Solution', on_delete=models.CASCADE)

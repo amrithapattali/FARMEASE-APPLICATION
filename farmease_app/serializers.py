@@ -72,42 +72,61 @@ class AgriculturalTechniqueSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'image']
 
 class CropSerializer(serializers.ModelSerializer):
-    techniques = serializers.PrimaryKeyRelatedField(queryset=AgriculturalTechnique.objects.all(), many=True)
+    techniques = serializers.SlugRelatedField(
+        many=True,
+        read_only=False,
+        queryset=AgriculturalTechnique.objects.all(),
+        slug_field='title'
+    )
 
     class Meta:
         model = Crop
         fields = ['id', 'name', 'description', 'climate', 'growth_period', 'harvesting_time', 'techniques']
         
+
+    
+class AgricultureOfficeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgricultureOffice
+        fields = ['id', 'name', 'location', 'contact_number', 'email']   
+
+import json
+
+# serializers.py
+from rest_framework import serializers
+from .models import Solution
+
 class SolutionSerializer(serializers.ModelSerializer):
-    crop = CropSerializer()  # Nesting CropSerializer within SolutionSerializer
+    solution = serializers.ListField(child=serializers.CharField())
 
     class Meta:
         model = Solution
-        fields = ['id', 'crop', 'symptoms', 'solution', 'description']
+        fields = ['id', 'symptoms', 'solution', 'description']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Convert the newline-separated string to a list for serialization
+        representation['solution'] = instance.solution.split('\n')
+        return representation
 
     def create(self, validated_data):
-        crop_data = validated_data.pop('crop')
-        crop = Crop.objects.create(**crop_data)
-        solution = Solution.objects.create(crop=crop, **validated_data)
-        return solution
-
-    def update(self, instance, validated_data):
-        crop_data = validated_data.pop('crop')
-        crop = instance.crop
-        crop.name = crop_data.get('name', crop.name)
-        crop.description = crop_data.get('description', crop.description)
-        crop.climate = crop_data.get('climate', crop.climate)
-        crop.soil_type = crop_data.get('soil_type', crop.soil_type)
-        crop.growth_period = crop_data.get('growth_period', crop.growth_period)
-        crop.save()
-
-        instance.symptoms = validated_data.get('symptoms', instance.symptoms)
-        instance.solution = validated_data.get('solution', instance.solution)
-        instance.description = validated_data.get('description', instance.description)
+        solution_list = validated_data.pop('solution', [])
+        instance = super().create(validated_data)
+        instance.solution = "\n".join(solution_list)
         instance.save()
         return instance
-    
-    
+
+    def update(self, instance, validated_data):
+        solution_list = validated_data.pop('solution', [])
+        instance = super().update(instance, validated_data)
+        instance.solution = "\n".join(solution_list)
+        instance.save()
+
+        return instance
+
+class SymptomSearchSerializer(serializers.Serializer):
+    symptom = serializers.CharField(max_length=255)
+
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback

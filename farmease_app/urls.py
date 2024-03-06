@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SuperuserLoginView, RegistrationView, LoginView, UserListView, SchemeListCreateView, SchemeUpdateDelete, UserSchemeListView, UserSchemeDetailView, NewsListCreateView, NewsUpdateDelete, UserNewsListView, AgriculturalTechniqueListCreateView, AgriculturalTechniqueUpdateDelete, UserAgriculturalTechniqueListView,CropListCreateView,CropUpdateDelete,SolutionListCreateView,SolutionUpdateDeleteView,FeedbackCreateView,FeedbackDetailView,FarmerProductListCreateView, FarmerProductDetailView,AgricultureOfficeListCreateView,AgricultureOfficeUpdateDelete,UserAgricultureOfficeListView,FarmCartAPIView,FarmOrderCreateAPIView
+from .views import *
 
 urlpatterns = [
     # Superuser login
@@ -29,7 +29,8 @@ urlpatterns = [
     path('news/<int:pk>/', NewsUpdateDelete.as_view(), name='news-update-delete'),
 
     # List news for users
-    path('user/news/', UserNewsListView.as_view(), name='user-news-list'),
+    path('usernews/', UserNewsListView.as_view(), name='user-news-list'),
+    path('usernews/<int:pk>',UserNewsDetailView.as_view()),
 
     # CRUD for agricultural techniques
     path('agricultural-techniques/', AgriculturalTechniqueListCreateView.as_view(), name='agricultural-technique-list-create'),
@@ -41,16 +42,19 @@ urlpatterns = [
     path('crops/', CropListCreateView.as_view(), name='crop-list-create'),
     path('crops/<int:pk>/', CropUpdateDelete.as_view(), name='crop-detail'),
     
-    path('solutions/', SolutionListCreateView.as_view(), name='solution-list-create'),
-    path('solutions/<int:pk>/', SolutionUpdateDeleteView.as_view(), name='solution-update-delete'),
+    path('solutions/', SolutionAPIView.as_view(), name='solution-api'),
+    path('solutions/<int:pk>/', SolutionAPIView.as_view(), name='solution-detail'),
+
+    #get solution by user/farmer
+    path('get_solution/', SolutionView.as_view(), name='get_solution'),
     
-    path('feedback/', FeedbackCreateView.as_view(), name='feedback-create'),
+    # path('feedback/', FeedbackCreateView.as_view(), name='feedback-create'),
     
     path('farmer-products/', FarmerProductListCreateView.as_view(), name='farmer_product_list_create'),
     path('farmer-products/<int:pk>/', FarmerProductDetailView.as_view(), name='farmer_product_detail'),
     
-    path('feedback/', FeedbackCreateView.as_view(), name='feedback_create'),
-    path('feedback/<int:pk>/', FeedbackDetailView.as_view(), name='feedback_detail'),
+    # path('feedback/', FeedbackCreateView.as_view(), name='feedback_create'),
+    # path('feedback/<int:pk>/', FeedbackDetailView.as_view(), name='feedback_detail'),
     
     # path('AddToCart/<int:product_id>/<int:quantity>/', AddToCart.as_view(), name='add_to_cart'),
     # path('cart-items/', CartItemsListview.as_view(), name='cart_items_list'),
