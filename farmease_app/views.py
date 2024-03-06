@@ -546,30 +546,20 @@ class SolutionAPIView(APIView):
 
 
 class SolutionView(APIView):
-    def get(self, request):
-        symptom = request.query_params.get('symptom', '')
 
-        try:
-            solution = Solution.objects.get(symptoms__icontains=symptom)
-            serializer = SolutionSerializer(solution)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        except Solution.DoesNotExist:
-            return Response({'detail': 'Symptom not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    # You can add the following logic to handle symptom searches using a POST request
     def post(self, request):
         serializer = SymptomSearchSerializer(data=request.data)
 
         if serializer.is_valid():
             symptom = serializer.validated_data['symptom']
 
-            try:
-                solution = Solution.objects.get(symptoms__icontains=symptom)
-                serializer = SolutionSerializer(solution)
-                return Response(serializer.data, status=status.HTTP_200_OK)
+            solutions = Solution.objects.filter(symptoms__icontains=symptom)
 
-            except Solution.DoesNotExist:
+            if solutions.exists():
+                # If there are multiple solutions, you might want to serialize and return a list of solutions
+                serializer = SolutionSerializer(solutions, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
                 return Response({'detail': 'Symptom not found'}, status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
