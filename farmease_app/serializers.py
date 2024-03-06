@@ -48,6 +48,11 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Both username and password are required")
 
         return data
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id','user_type', 'username', 'email', 'phone', 'address', 'location']
     
 class SchemeSerializer(serializers.ModelSerializer):
     class Meta:

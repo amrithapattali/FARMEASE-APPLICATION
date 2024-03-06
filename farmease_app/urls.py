@@ -11,6 +11,9 @@ urlpatterns = [
     # User login
     path('login/', LoginView.as_view(), name='login'),
 
+    #profile
+    path('profile/<int:pk>/', ProfileView.as_view(), name='profile-detail'),
+
     # List all users (admin only)
     path('users/', UserListView.as_view(), name='user-list'),
 
