@@ -138,10 +138,31 @@ class FeedbackSerializer(serializers.ModelSerializer):
         fields = ['id', 'solution', 'user', 'content', 'date_posted']
         
         
-class FarmerProductSerializer(serializers.ModelSerializer):
+class FarmProductsSerializer(serializers.ModelSerializer):
+    posted_by = serializers.CharField(write_only=True)
+
     class Meta:
         model = FarmerProduct
-        fields = '__all__'
+        fields = ('id', 'posted_by', 'crop_type', 'crop_name', 'image', 'price', 'quantity', 'description')
+
+    def validate_posted_by(self, value):
+        try:
+            user = CustomUser.objects.get(username=value)
+            return user
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError(f"User with username '{value}' does not exist.")
+
+    def create(self, validated_data):
+        posted_by_username = validated_data.pop('posted_by')
+        posted_by = CustomUser.objects.get(username=posted_by_username)
+        farm_product = FarmerProduct.objects.create(posted_by=posted_by, **validated_data)
+        return farm_product
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['posted_by'] = instance.posted_by.username if instance.posted_by else None
+        return {'status': 1, 'data': representation}
+    
         
 class FarmCartSerializer(serializers.ModelSerializer):
     class Meta:
@@ -221,3 +242,22 @@ class FarmOrderSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = FarmOrder
 #         fields = '__all__'
+    
+
+class PlantImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlantImage
+        fields = ['id','image']
+
+
+class PlantHealthResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlantHealthResult
+        fields = ['id', 'is_healthy', 'name', 'probability', 'description', 'treatment']
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    result = PlantHealthResultSerializer()
+
+    class Meta:
+        model = healthFeedback
+        fields = ['id', 'user', 'result', 'feedback_text', 'created_at']

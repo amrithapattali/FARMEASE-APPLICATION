@@ -41,9 +41,13 @@ urlpatterns = [
 
     # List agricultural techniques for users
     path('user/agricultural-techniques/', UserAgriculturalTechniqueListView.as_view(), name='user-agricultural-technique-list'),
-    
+    path('techniques/<int:pk>/', AgriculturalTechniqueDetail.as_view(), name='agricultural-technique-detail'),
+
     path('crops/', CropListCreateView.as_view(), name='crop-list-create'),
     path('crops/<int:pk>/', CropUpdateDelete.as_view(), name='crop-detail'),
+    #view crops bu user
+    path('usercrops/', CropListAPIView.as_view(), name='crop-list'),
+    path('usercrops/<int:pk>/', CropDetailAPIView.as_view(), name='crop-detail'),
     
     path('solutions/', SolutionAPIView.as_view(), name='solution-api'),
     path('solutions/<int:pk>/', SolutionAPIView.as_view(), name='solution-detail'),
@@ -69,5 +73,11 @@ urlpatterns = [
     
      path('farmcart/', FarmCartAPIView.as_view(), name='formcart'),
     path('farm-orders/', FarmOrderCreateAPIView.as_view(), name='farm-order-create'),
+    #plant health
+    path('health-assessment/', PlantHealthAPIView.as_view(), name='health-assessment'),
+    path('health-result/<int:result_id>/', PlantHealthAPIView.as_view(), name='health-result'),
+    path('feedback/', FeedbackAPIView.as_view(), name='feedback'),
+    path('manipulatefeedback/<int:feedback_id>/', FeedbackUpdateDeleteView.as_view(), name='feedback-detail-api'),
+
 ]
 

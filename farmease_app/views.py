@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
-from rest_framework import generics
+from rest_framework import generics,response
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, login
 from rest_framework.authtoken.models import Token
@@ -468,7 +468,19 @@ class UserAgriculturalTechniqueListView(APIView):
         techniques = AgriculturalTechnique.objects.all()
         serializer = AgriculturalTechniqueSerializer(techniques, many=True)
         return Response(serializer.data)
-    
+#user agricultual teschnique view by id
+
+class AgriculturalTechniqueDetail(APIView):
+    def get_object(self, pk):
+        try:
+            return AgriculturalTechnique.objects.get(pk=pk)
+        except AgriculturalTechnique.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        technique = self.get_object(pk)
+        serializer = AgriculturalTechniqueSerializer(technique)
+        return Response(serializer.data)
 #Crop add by admin 
 
 class CropListCreateView(APIView):
@@ -514,6 +526,32 @@ class CropUpdateDelete(APIView):
         crop = self.get_crop_object(pk)
         crop.delete()
         return Response({'msg': 'Deleted'})
+    
+
+#view crop by user 
+class CropListAPIView(APIView):
+   
+
+    def get(self, request, *args, **kwargs):
+        # Retrieve all crops
+        crops = Crop.objects.all()
+        serializer = CropSerializer(crops, many=True)
+        return Response(serializer.data)
+
+class CropDetailAPIView(APIView):
+    
+
+    def get_object(self, pk):
+        try:
+            return Crop.objects.get(pk=pk)
+        except Crop.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, *args, **kwargs):
+        # Retrieve a single crop by ID
+        crop = self.get_object(pk)
+        serializer = CropSerializer(crop)
+        return Response(serializer.data)
     
 #solution add by admin 
 from django.http import Http404
@@ -604,44 +642,7 @@ class SolutionView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
        
     
-# class FeedbackCreateView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
 
-#     def post(self, request):
-#         serializer = FeedbackSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save(user=request.user)  # Assign the current user to the 'user' field
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-# class FeedbackDetailView(APIView):
-#     authentication_classes = [TokenAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get_feedback_object(self, pk):
-#         try:
-#             return Feedback.objects.get(pk=pk)
-#         except Feedback.DoesNotExist:
-#             return Response({"error": "Feedback does not exist"}, status=status.HTTP_404_NOT_FOUND)
-
-#     def get(self, request, pk):
-#         feedback = self.get_feedback_object(pk)
-#         serializer = FeedbackSerializer(feedback)
-#         return Response(serializer.data)
-
-#     def put(self, request, pk):
-#         feedback = self.get_feedback_object(pk)
-#         serializer = FeedbackSerializer(instance=feedback, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, pk):
-#         feedback = self.get_feedback_object(pk)
-#         feedback.delete()
-#         return Response({'msg': 'Deleted'})
     
     
 class FarmerProductListCreateView(APIView):
@@ -649,20 +650,22 @@ class FarmerProductListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         farmer_products = FarmerProduct.objects.all()
-        serializer = FarmerProductSerializer(farmer_products, many=True)
+        serializer = FarmProductsSerializer(farmer_products, many=True)
         if serializer.data:
                 return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
         else:
                 return Response({"status":0,"Message":"No product"},status=status.HTTP_204_NO_CONTENT)
    
     def post(self, request):
-        serializer = FarmerProductSerializer(data=request.data)
+        serializer = FarmProductsSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(posted_by=request.user)  # Assign the posted_by to the current user
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class FarmerProductDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
     def get_farmer_product_object(self, pk):
         try:
             return FarmerProduct.objects.get(pk=pk)
@@ -671,7 +674,7 @@ class FarmerProductDetailView(APIView):
 
     def get(self, request, pk):
         farmer_product = self.get_farmer_product_object(pk)
-        serializer = FarmerProductSerializer(farmer_product)
+        serializer = FarmProductsSerializer(farmer_product)
         if serializer.data:
                 return Response({"status":1,"data":serializer.data},status=status.HTTP_200_OK)
         else:
@@ -679,7 +682,7 @@ class FarmerProductDetailView(APIView):
         
     def put(self, request, pk):
         farmer_product = self.get_farmer_product_object(pk)
-        serializer = FarmerProductSerializer(instance=farmer_product, data=request.data)
+        serializer = FarmProductsSerializer(instance=farmer_product, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -1039,3 +1042,131 @@ class FarmOrderCreateAPIView(APIView):
 
 #         except Exception as e:
 #            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+from kindwise import PlantApi
+
+class PlantHealthAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = PlantImageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        image_file = serializer.validated_data['image']
+
+        # Process the image directly from memory
+        api = PlantApi('3srgfK8yEjIu5GZkZIStHHe8wqwgC71zpV7IAhdwDQjuZLK0B8')
+        identification = api.health_assessment(image_file.read(), details=['description', 'treatment'])
+
+        # Extract suggestion with the highest probability
+        highest_probability_suggestion = max(
+            identification.result.disease.suggestions,
+            key=lambda suggestion: suggestion.probability
+        )
+
+        # Save health assessment result in the database
+        plant_health_result = PlantHealthResult.objects.create(
+            is_healthy=identification.result.is_healthy.binary,
+            name=highest_probability_suggestion.name,
+            probability=highest_probability_suggestion.probability,
+            description=highest_probability_suggestion.details['description'],
+            treatment=highest_probability_suggestion.details['treatment']
+        )
+
+        result = {
+            'is_healthy': plant_health_result.is_healthy,
+            'disease': {
+                'name': plant_health_result.name,
+                'probability': plant_health_result.probability,
+                'description': plant_health_result.description,
+                'treatment': plant_health_result.treatment,
+            }
+        }
+
+        return Response(result, status=status.HTTP_200_OK)
+    def get(self, request, *args, **kwargs):
+        result_id = kwargs.get('result_id')
+        
+        try:
+            plant_health_result = PlantHealthResult.objects.get(id=result_id)
+        except PlantHealthResult.DoesNotExist:
+            return Response({'detail': 'PlantHealthResult not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PlantHealthResultSerializer(plant_health_result)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class FeedbackAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        result_id = request.data.get('result_id')
+        feedback_text = request.data.get('feedback', '')
+
+        try:
+            plant_health_result = PlantHealthResult.objects.get(id=result_id)
+        except PlantHealthResult.DoesNotExist:
+            return Response({'detail': 'Invalid result_id'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use the correct field names when creating the Feedback instance
+        feedback = healthFeedback(user=request.user, result=plant_health_result, feedback_text=feedback_text)
+        feedback.save()
+
+        feedback_serializer = FeedbackSerializer(feedback)
+
+        return Response(feedback_serializer.data, status=status.HTTP_201_CREATED)
+    
+    def get(self, request, *args, **kwargs):
+        user = request.user  # Get the authenticated user
+        feedback_list = healthFeedback.objects.filter(user=user)
+
+        feedback_serializer = FeedbackSerializer(feedback_list, many=True)
+        return Response(feedback_serializer.data, status=status.HTTP_200_OK)
+    
+class FeedbackUpdateDeleteView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        feedback_id = kwargs.get('feedback_id')
+
+        try:
+            feedback = healthFeedback.objects.get(id=feedback_id)
+        except healthFeedback.DoesNotExist:
+            return Response({'detail': 'Feedback not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        feedback_serializer = FeedbackSerializer(feedback)
+        return Response(feedback_serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        feedback_id = kwargs.get('feedback_id')
+
+        try:
+            feedback = healthFeedback.objects.get(id=feedback_id)
+        except healthFeedback.DoesNotExist:
+            return Response({'detail': 'Feedback not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        feedback_text = request.data.get('feedback')
+
+        if feedback_text is not None and feedback_text != '':
+            feedback.feedback_text = feedback_text
+            feedback.save()
+
+            feedback_serializer = FeedbackSerializer(feedback)
+            return Response(feedback_serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({'detail': 'Feedback text cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    def delete(self, request, *args, **kwargs):
+        feedback_id = kwargs.get('feedback_id')
+
+        try:
+            feedback = healthFeedback.objects.get(id=feedback_id)
+        except healthFeedback.DoesNotExist:
+            return Response({'detail': 'Feedback not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        feedback.delete()
+        return Response({'detail': 'Feedback deleted successfully'}, status=status.HTTP_204_NO_CONTENT)

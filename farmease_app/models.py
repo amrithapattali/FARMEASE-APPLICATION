@@ -228,3 +228,21 @@ class FarmOrder(models.Model):
         
 
 
+class PlantImage(models.Model):
+    image = models.ImageField(upload_to='plant_images/')
+
+
+class PlantHealthResult(models.Model):
+    is_healthy = models.BooleanField()
+    name = models.CharField(max_length=255)
+    probability = models.FloatField()
+    description = models.TextField()
+    treatment = models.TextField()
+
+class healthFeedback(models.Model):
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    result = models.ForeignKey(PlantHealthResult, on_delete=models.CASCADE, related_name='feedback')
+    feedback_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    
