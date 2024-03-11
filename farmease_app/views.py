@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from django.shortcuts import get_object_or_404
 # Create your views here.
 from rest_framework import generics,response
 from django.shortcuts import get_object_or_404
@@ -95,6 +95,7 @@ class LoginView(APIView):
 
                 # Include user details in the response
                 user_data = {
+                    'id':user.id,
                     'username': user.username,
                     'email': user.email,
                     'user_type': user.user_type,  # Assuming user_type is a field in your CustomUser model
@@ -287,6 +288,7 @@ class UserNewsDetailView(APIView):
         return Response({'status':1,'data':serializer.data})    
 
 #News update by admin
+from rest_framework.exceptions import NotFound    
 
 class NewsUpdateDelete(APIView):
     authentication_classes = [TokenAuthentication]
@@ -296,7 +298,7 @@ class NewsUpdateDelete(APIView):
         try:
             return News.objects.get(pk=pk)
         except News.DoesNotExist:
-            return Response({"error": "News does not exist"}, status=status.HTTP_404_NOT_FOUND)
+            raise NotFound("News does not exist")
 
     def get(self, request, pk):
         news = self.get_news_object(pk)
@@ -1170,3 +1172,116 @@ class FeedbackUpdateDeleteView(APIView):
 
         feedback.delete()
         return Response({'detail': 'Feedback deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    
+class PaymentListCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Filter payments based on the orderid__username belonging to the authenticated user
+        payments = Payment.objects.filter(orderid__username=request.user)
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(username=request.user)
+            return Response({'message': 'Order successful', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class PaymentDetailView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_payment(self, pk):
+        try:
+            # Retrieve a specific payment for the authenticated user
+            payment = Payment.objects.get(id=pk, orderid__username=self.request.user)
+            return payment
+        except Payment.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        payment = self.get_payment(pk)
+        if payment:
+            serializer = PaymentSerializer(payment)
+            return Response(serializer.data)
+        return Response({'message': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, pk):
+        payment = self.get_payment(pk)
+        if payment:
+            # Update the payment details
+            serializer = PaymentSerializer(payment, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'message': 'Payment updated successfully', 'data': serializer.data})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        payment = self.get_payment(pk)
+        if payment:
+            # Delete the payment
+            payment.delete()
+            return Response({'message': 'Payment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+
+class OrderFeedbackListAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        order_feedback_instances = OrderFeedback.objects.filter(user=request.user)
+        serializer = OrderFeedbackSerializer(order_feedback_instances, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        serializer = OrderFeedbackSerializer(data=request.data, context={'request': request})
+
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class OrderFeedbackDetailAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, *args, **kwargs):
+        order_feedback_instance = self.get_object(pk)
+        serializer = OrderFeedbackSerializer(order_feedback_instance)
+        return Response(serializer.data)
+
+    def put(self, request, pk, *args, **kwargs):
+        order_feedback_instance = self.get_object(pk)
+        self.check_user_permission(order_feedback_instance)
+
+        serializer = OrderFeedbackSerializer(order_feedback_instance, data=request.data, context={'request': request})
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, *args, **kwargs):
+        order_feedback_instance = self.get_object(pk)
+        self.check_user_permission(order_feedback_instance)
+
+        order_feedback_instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_object(self, pk):
+        try:
+            return OrderFeedback.objects.get(pk=pk)
+        except OrderFeedback.DoesNotExist:
+            raise status.HTTP_404_NOT_FOUND
+
+    def check_user_permission(self, order_feedback_instance):
+        if order_feedback_instance.user != self.request.user:
+            raise status.HTTP_403_FORBIDDEN

@@ -78,6 +78,10 @@ urlpatterns = [
     path('health-result/<int:result_id>/', PlantHealthAPIView.as_view(), name='health-result'),
     path('feedback/', FeedbackAPIView.as_view(), name='feedback'),
     path('manipulatefeedback/<int:feedback_id>/', FeedbackUpdateDeleteView.as_view(), name='feedback-detail-api'),
-
+    #payment
+    path('payments/', PaymentListCreateView.as_view(), name='payment-list-create'),
+    path('payments/<int:pk>/',PaymentDetailView.as_view(), name='payment-detail'),
+     path('orderfeedback/',OrderFeedbackListAPIView.as_view(), name='orderfeedback-list'),
+    path('orderfeedback/<int:pk>/',OrderFeedbackDetailAPIView.as_view(), name='orderfeedback-detail'),
 ]
 

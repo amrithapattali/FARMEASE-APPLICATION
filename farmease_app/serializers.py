@@ -261,3 +261,39 @@ class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = healthFeedback
         fields = ['id', 'user', 'result', 'feedback_text', 'created_at']
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ('id', 'orderid', 'username', 'card_number', 'cvv', 'expiry_date','payment_date', 'amount_paid','status')
+        # Make 'status' field optional
+        extra_kwargs = {'status': {'required': False}}
+
+    def create(self, validated_data):
+        # Assuming that when a payment is created, it is considered successful
+        validated_data['status'] = 'order_success'
+        return Payment.objects.create(**validated_data)
+    
+
+
+class OrderFeedbackSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = OrderFeedback
+        fields = ['id', 'order', 'username', 'crop_names', 'content', 'date_posted']
+
+    def create(self, validated_data):
+        # Extract 'order' ID from the request data
+        order_id = validated_data.pop('order').id  # Access the 'id' of the 'FarmOrder' object
+
+        # Assuming you're using authentication and want to associate the feedback with the current user
+        user = self.context['request'].user
+
+        # Retrieve the FarmOrder instance using the extracted ID
+        order_instance = FarmOrder.objects.get(pk=order_id)
+
+        # Create the OrderFeedback instance
+        feedback_instance = OrderFeedback.objects.create(user=user, order=order_instance, **validated_data)
+        return feedback_instance

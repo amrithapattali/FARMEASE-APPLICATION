@@ -245,4 +245,35 @@ class healthFeedback(models.Model):
     feedback_text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    
+class Payment(models.Model):
+    orderid = models.ForeignKey(FarmOrder, on_delete=models.CASCADE)
+    username = models.CharField(max_length=255)
+    card_number = models.CharField(max_length=16)
+    cvv = models.CharField(max_length=4)
+    expiry_date = models.CharField(max_length=10)
+    STATUS_CHOICES = [
+        ('order_success', 'Order Success'),
+        ('order_pending', 'Order Pending'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    payment_date = models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    amount_paid = models.FloatField(blank=True,null=True)
+
+    def __str__(self):
+        return f"Payment for Order {self.order.id} - {self.status}"
+
+    def save(self, *args, **kwargs):
+        # Assuming that when a payment is saved, it is considered successful
+        self.status = 'order_success'
+        super().save(*args, **kwargs)
+
+
+class OrderFeedback(models.Model):
+    order = models.ForeignKey(FarmOrder, on_delete=models.CASCADE, related_name='feedback')
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    crop_names = models.TextField(null=True, blank=True) 
+    content = models.TextField()
+    date_posted = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for Order {self.order.id}"
