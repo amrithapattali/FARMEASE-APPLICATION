@@ -149,6 +149,19 @@ class ProfileView(APIView):
             return Response({"message": "User deleted successfully", "status": 1}, status=status.HTTP_204_NO_CONTENT)
         except CustomUser.DoesNotExist:
             return Response({"message": "User not found", "status": 0}, status=status.HTTP_404_NOT_FOUND) 
+
+class ProfileEditView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"data": serializer.data, "status": 1}, status=status.HTTP_200_OK)
+        return Response({"data": serializer.errors, "status": 0}, status=status.HTTP_400_BAD_REQUEST)
                
 #admin view all the user /farmer details
     
