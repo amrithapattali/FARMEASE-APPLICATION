@@ -290,7 +290,7 @@ class UserNewsDetailView(APIView):
 #News update by admin
 from rest_framework.exceptions import NotFound    
 
-class NewsUpdateDelete(APIView):
+class NewsView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -305,19 +305,32 @@ class NewsUpdateDelete(APIView):
         serializer = NewsSerializer(news)
         return Response(serializer.data)
 
+class NewsUpdateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     def put(self, request, pk):
-        news = self.get_news_object(pk)
-        serializer = NewsSerializer(instance=news, data=request.data)
+        try:
+            news = News.objects.get(pk=pk)
+        except News.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = NewsSerializer(news, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class NewsDeleteView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     def delete(self, request, pk):
-        news = self.get_news_object(pk)
+        try:
+            news = News.objects.get(pk=pk)
+        except News.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
         news.delete()
-        return Response({'msg': 'Deleted'})
-    
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 # News view by User/Farmer
 
@@ -359,7 +372,7 @@ class AgricultureOfficeListCreateView(APIView):
         else:
             return Response({"status":0,"Message":"No agriculture office"},status=status.HTTP_204_NO_CONTENT)
 
-class AgricultureOfficeUpdateDelete(APIView):
+class AgricultureOfficeView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -377,19 +390,28 @@ class AgricultureOfficeUpdateDelete(APIView):
         else:
             return Response({"status":0,"Message":"No agriculture office"},status=status.HTTP_204_NO_CONTENT)
     
+class AgricultureOfficeUpdateView(APIView):
     def put(self, request, pk):
-        agriculture_office = self.get_agriculture_office_object(pk)
-        serializer = AgricultureOfficeSerializer(instance=agriculture_office, data=request.data)
+        try:
+            office = AgricultureOffice.objects.get(pk=pk)
+        except AgricultureOffice.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = AgricultureOfficeSerializer(office, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class AgricultureOfficeDeleteView(APIView):
     def delete(self, request, pk):
-        agriculture_office = self.get_agriculture_office_object(pk)
-        agriculture_office.delete()
-        return Response({'msg': 'Deleted'})
-    
+        try:
+            office = AgricultureOffice.objects.get(pk=pk)
+        except AgricultureOffice.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        office.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 #Agriculturaloffice  view by User/Farmer
 
@@ -501,7 +523,7 @@ class CropListCreateView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class CropUpdateDelete(APIView):
+class CropView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAdminUser]
 
@@ -516,19 +538,28 @@ class CropUpdateDelete(APIView):
         serializer = CropSerializer(crop)
         return Response(serializer.data)
 
+class CropUpdateView(APIView):
     def put(self, request, pk):
-        crop = self.get_crop_object(pk)
-        serializer = CropSerializer(instance=crop, data=request.data)
+        try:
+            crop = Crop.objects.get(pk=pk)
+        except Crop.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = CropSerializer(crop, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class CropDeleteView(APIView):
     def delete(self, request, pk):
-        crop = self.get_crop_object(pk)
+        try:
+            crop = Crop.objects.get(pk=pk)
+        except Crop.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
         crop.delete()
-        return Response({'msg': 'Deleted'})
-    
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 #view crop by user 
 class CropListAPIView(APIView):
@@ -682,18 +713,30 @@ class FarmerProductDetailView(APIView):
         else:
                 return Response({"status":0,"Message":"No product"},status=status.HTTP_204_NO_CONTENT)
         
+class FarmerProductUpdateView(APIView):
     def put(self, request, pk):
-        farmer_product = self.get_farmer_product_object(pk)
-        serializer = FarmProductsSerializer(instance=farmer_product, data=request.data)
+        try:
+            farmer_product = FarmerProduct.objects.get(pk=pk)
+        except FarmerProduct.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = FarmProductsSerializer(farmer_product, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class FarmerProductDeleteView(APIView):
     def delete(self, request, pk):
-        farmer_product = self.get_farmer_product_object(pk)
+        try:
+            farmer_product = FarmerProduct.objects.get(pk=pk)
+        except FarmerProduct.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
         farmer_product.delete()
-        return Response({'msg': 'Deleted'})
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
     
 class FarmCartAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -1086,16 +1129,10 @@ class PlantHealthAPIView(APIView):
         }
 
         return Response(result, status=status.HTTP_200_OK)
-    def get(self, request, *args, **kwargs):
-        result_id = kwargs.get('result_id')
-        
-        try:
-            plant_health_result = PlantHealthResult.objects.get(id=result_id)
-        except PlantHealthResult.DoesNotExist:
-            return Response({'detail': 'PlantHealthResult not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = PlantHealthResultSerializer(plant_health_result)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get(self, request):
+        qs = PlantHealthResult.objects.all()
+        serializer = PlantHealthResultSerializer(qs, many=True)
+        return Response(serializer.data)
     
 
 class FeedbackAPIView(APIView):
@@ -1126,7 +1163,7 @@ class FeedbackAPIView(APIView):
         feedback_serializer = FeedbackSerializer(feedback_list, many=True)
         return Response(feedback_serializer.data, status=status.HTTP_200_OK)
     
-class FeedbackUpdateDeleteView(APIView):
+class FeedbackView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -1141,37 +1178,28 @@ class FeedbackUpdateDeleteView(APIView):
         feedback_serializer = FeedbackSerializer(feedback)
         return Response(feedback_serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request, *args, **kwargs):
-        feedback_id = kwargs.get('feedback_id')
-
+class HealthFeedbackUpdateView(APIView):
+    def put(self, request, pk):
         try:
-            feedback = healthFeedback.objects.get(id=feedback_id)
+            feedback = healthFeedback.objects.get(pk=pk)
         except healthFeedback.DoesNotExist:
-            return Response({'detail': 'Feedback not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = FeedbackSerializer(feedback, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        feedback_text = request.data.get('feedback')
-
-        if feedback_text is not None and feedback_text != '':
-            feedback.feedback_text = feedback_text
-            feedback.save()
-
-            feedback_serializer = FeedbackSerializer(feedback)
-            return Response(feedback_serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response({'detail': 'Feedback text cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-    def delete(self, request, *args, **kwargs):
-        feedback_id = kwargs.get('feedback_id')
-
+class HealthFeedbackDeleteView(APIView):
+    def delete(self, request, pk):
         try:
-            feedback = healthFeedback.objects.get(id=feedback_id)
+            feedback = healthFeedback.objects.get(pk=pk)
         except healthFeedback.DoesNotExist:
-            return Response({'detail': 'Feedback not found'}, status=status.HTTP_404_NOT_FOUND)
-
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
         feedback.delete()
-        return Response({'detail': 'Feedback deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 class PaymentListCreateView(APIView):
     authentication_classes = [TokenAuthentication]

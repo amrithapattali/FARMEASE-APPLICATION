@@ -29,7 +29,9 @@ urlpatterns = [
 
     # CRUD for news
     path('news/', NewsListCreateView.as_view(), name='news-list-create'),
-    path('news/<int:pk>/', NewsUpdateDelete.as_view(), name='news-update-delete'),
+    path('news/<int:pk>/', NewsView.as_view(), name='news-retrive'),
+    path('newsupdate/<int:pk>/',NewsUpdateView.as_view(),name='newsupdate'),
+    path('newsdelete/<int:pk>/',NewsDeleteView.as_view(),name='newsdelete'),
 
     # List news for users
     path('usernews/', UserNewsListView.as_view(), name='user-news-list'),
@@ -44,7 +46,9 @@ urlpatterns = [
     path('techniques/<int:pk>/', AgriculturalTechniqueDetail.as_view(), name='agricultural-technique-detail'),
 
     path('crops/', CropListCreateView.as_view(), name='crop-list-create'),
-    path('crops/<int:pk>/', CropUpdateDelete.as_view(), name='crop-detail'),
+    path('crops/<int:pk>/', CropView.as_view(), name='crop-detail'),
+    path('cropupdate/<int:pk>/',CropUpdateView.as_view(),name='cropupdate'),
+    path('cropdelete/<int:pk>/',CropDeleteView.as_view(),name='cropdelete'),
     #view crops bu user
     path('usercrops/', CropListAPIView.as_view(), name='crop-list'),
     path('usercrops/<int:pk>/', CropDetailAPIView.as_view(), name='crop-detail'),
@@ -59,7 +63,8 @@ urlpatterns = [
     
     path('farmer-products/', FarmerProductListCreateView.as_view(), name='farmer_product_list_create'),
     path('farmer-products/<int:pk>/', FarmerProductDetailView.as_view(), name='farmer_product_detail'),
-    
+    path('farm-product-update/<int:pk>/',FarmerProductUpdateView.as_view(),name='productupdate'),
+    path('farm-product-delete/<int:pk>/',FarmerProductDeleteView.as_view(),name='productdelete'),
     # path('feedback/', FeedbackCreateView.as_view(), name='feedback_create'),
     # path('feedback/<int:pk>/', FeedbackDetailView.as_view(), name='feedback_detail'),
     
@@ -68,16 +73,20 @@ urlpatterns = [
     # path('cart-item-delete/<int:pk>/', CartItemDelete.as_view(), name='cart_item_delete'),
     
      path('agriculture-offices/', AgricultureOfficeListCreateView.as_view(), name='agriculture_office_list_create'),
-    path('agriculture-offices/<int:pk>/', AgricultureOfficeUpdateDelete.as_view(), name='agriculture_office_detail'),
+    path('agriculture-offices/<int:pk>/', AgricultureOfficeView.as_view(), name='agriculture_office_detail'),
+    path('agriofficeupdate/<int:pk>',AgricultureOfficeUpdateView.as_view(),name='agriupdate'),
+    path('agridelete/<int:pk>/',AgricultureOfficeDeleteView.as_view(),name='agridelete'),
     path('user/agriculture-offices/', UserAgricultureOfficeListView.as_view(), name='user_agriculture_office_list'),
     
      path('farmcart/', FarmCartAPIView.as_view(), name='formcart'),
     path('farm-orders/', FarmOrderCreateAPIView.as_view(), name='farm-order-create'),
     #plant health
     path('health-assessment/', PlantHealthAPIView.as_view(), name='health-assessment'),
-    path('health-result/<int:result_id>/', PlantHealthAPIView.as_view(), name='health-result'),
+    # path('health-result/<int:result_id>/', PlantHealthAPIView.as_view(), name='health-result'),
     path('feedback/', FeedbackAPIView.as_view(), name='feedback'),
-    path('manipulatefeedback/<int:feedback_id>/', FeedbackUpdateDeleteView.as_view(), name='feedback-detail-api'),
+    path('feedback/<int:feedback_id>/', FeedbackView.as_view(), name='feedback-detail-api'),
+    path('feedbackupdate/<int:pk>/',HealthFeedbackUpdateView.as_view(),name='feedbackupdate'),
+    path('feedbackdelete/<int:pk>/',HealthFeedbackDeleteView.as_view(),name='feedbackdelete'),
     #payment
     path('payments/', PaymentListCreateView.as_view(), name='payment-list-create'),
     path('payments/<int:pk>/',PaymentDetailView.as_view(), name='payment-detail'),
