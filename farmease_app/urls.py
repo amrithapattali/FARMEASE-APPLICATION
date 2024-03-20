@@ -13,6 +13,7 @@ urlpatterns = [
 
     #profile
     path('profile/<int:pk>/', ProfileView.as_view(), name='profile-detail'),
+     path('profile/edit/<int:pk>/', ProfileEditView.as_view(), name='profile-edit'),
 
     # List all users (admin only)
     path('users/', UserListView.as_view(), name='user-list'),
